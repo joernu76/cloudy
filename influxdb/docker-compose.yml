@@ -1,0 +1,19 @@
+version:
+  "3"
+services:
+  influxdb2:
+    container_name: influxdb-influxdb
+    restart: always
+    image: influxdb:2
+    ports:
+      - 8086:8086
+    volumes:
+      - /var/influxdb/data:/var/lib/influxdb2
+      - /var/influxdb/etc:/etc/influxdb2
+      - ./secrets:/run/secrets/influxdb2
+      - /var/influxdb/backup:/backup
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME_FILE: /run/secrets/influxdb2/admin-username
+      DOCKER_INFLUXDB_INIT_PASSWORD_FILE: /run/secrets/influxdb2/admin-password
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN_FILE: /run/secrets/influxdb2/admin-token

@@ -1,0 +1,16 @@
+Add a .env file with the following content:
+
+STANDARD_PASSWORD=<mydefaultpassword>
+NEXTCLOUD_URL=<mypublicfacingurl>
+
+
+Then doing "docker-compose up -d" should do the trick.
+Ther certificates for the host must be sorted out
+first using certbot, though. I added a manual link 
+/var/nextcloud/certbot/conf/live/nextcloud pointing
+to the correct directory to hide the URL.
+
+A cronjob should run maintanance periodically:
+
+*/5 * * * * docker exec -u www-data nextcloud-nextcloud php /var/www/html/cron.php >> /root/cron.php.log 2>&1
+

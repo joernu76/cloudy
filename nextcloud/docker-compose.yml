@@ -1,0 +1,93 @@
+version:
+  "3"
+services:
+  mariadb:
+    image: mariadb:11.7.2
+
+    # TODO
+    # mariadb 11.7.2 is actually unsupported, but this prevents it from upgrading further.
+    # As soon as a newer version from MariaDB is supported upgrade to that and keep it fixed
+
+    container_name: nextcloud-mariadb
+    restart: always
+    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW --innodb-file-per-table=1 --skip-innodb-read-only-compressed
+    volumes:
+      - /var/nextcloud/mariadb:/var/lib/mysql
+    environment:
+      - MARIADB_ROOT_PASSWORD=${STANDARD_PASSWORD}
+      - MARIADB_DATABASE=nextcloud
+      - MARIADB_USER=root
+
+  # Do we need this?
+  myadmin:
+    image: phpmyadmin
+    container_name: nextcloud-phpmyadmin
+    restart: always
+    ports:
+      - 9021:80
+    links:
+      - mariadb:db
+    environment:
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=${STANDARD_PASSWORD}
+
+  nextcloud:
+    image: nextcloud:stable
+    container_name: nextcloud-nextcloud
+    restart: always
+    links:
+      - mariadb:mysql
+    volumes:
+      - /var/nextcloud/nextcloud:/var/www/html 
+      - /var/nextcloud/apps:/var/www/html/custom_apps 
+      - /var/nextcloud/config:/var/www/html/config 
+      - /var/nextcloud/data:/var/www/html/data 
+    depends_on:
+      - mariadb
+      - redis
+      - collabora
+    environment:
+      - MYSQL_PASSWORD=${STANDARD_PASSWORD}
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=root
+      - MYSQL_HOST=mariadb
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - PHP_MEMORY_LIMIT=1G
+
+  # HTTPS is handled by nginx
+  collabora:
+    image: collabora/code
+    container_name: nextcloud-collabora
+    restart: always
+    privileged: true
+    environment:
+      - password=${STANDARD_PASSWORD}
+      - username=nextcloud
+      - server_name=${NEXTCLOUD_URL}:1123
+      - DONT_GEN_SSL_CERT=1
+      - "extra_params=--o:ssl.enable=false --o:ssl.termination=true"
+
+  redis:
+    image: redis
+    container_name: nextcloud-redis
+    restart: always
+    volumes:
+      - /var/nextcloud/redis:/usr/local/etc/redis
+      - /var/nextcloud/redis-data:/data
+
+  # reverse proxy for nextcloud and collabora server
+  # hack to use letsencrypt running on host system
+  nginx:
+    image: nginx:alpine
+    container_name: nextcloud-nginx
+    restart: always
+    ports:
+      - 1124:443
+      - 1123:444
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - /var/nextcloud/certbot/config/live/nextcloud:/etc/nginx/certs
+      - /var/nextcloud/certbot/config/archive:/etc/archive
+    depends_on:
+      - nextcloud
