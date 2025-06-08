@@ -1,0 +1,9 @@
+Add the following files to the secret directory:
+
+admin-username
+admin-password
+admin-token
+
+containing each only the username and password of the admin user as well as a token
+for accessing the database. The token might be something like
+"MyTotallySecretToken0=="

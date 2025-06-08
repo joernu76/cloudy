@@ -1,0 +1,7 @@
+Add this to root crontab.
+
+15 0 * * 2 /bin/bash /home/pi/cloudy/certbot/certbot.sh >> /root/certbot.log 2>&1
+
+the script renews the certificate and restarts the nextcloud nginx server to use it.
+Not documented: How to set the thing up first as I copied eveything over.
+Shouldnt be too difficult, hopefully.

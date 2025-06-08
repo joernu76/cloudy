@@ -1,0 +1,24 @@
+# SBFSpot
+
+## Documentation
+https://hub.docker.com/r/solarexplorer/sbfspot-sqlite
+
+## Commands used to create the dockers
+
+* sudo docker create -t  -v /etc/localtime:/etc/localtime:ro  -v /var/sbfspot/data:/var/smadata  -v /var/sbfspot/config/SBFspot.cfg:/opt/sbfspot/SBFspot.cfg  --device=/dev/tty  --net=host  --name sbfspot-daydata  solarexplorer/sbfspot-sqlite /opt/sbfspot/SBFspot -v -ad1 -am0 -ae1
+* sudo docker create -t  -v /etc/localtime:/etc/localtime:ro  -v /var/sbfspot/data:/var/smadata  -v /var/sbfspot/config/SBFspot.cfg:/opt/sbfspot/SBFspot.cfg  --device=/dev/tty  --net=host  --name sbfspot-monthdata  solarexplorer/sbfspot-sqlite /opt/sbfspot/SBFspot -v -sp0 -ad0 -am1 -ae1 -finq
+
+## fetch data
+
+*/5 6-22 * * * docker start -a sbfspot-daydata
+55 05 * * * docker start -a sbfspot-monthdata
+
+## upload
+
+docker run -dt --restart=unless-stopped \
+ -v /etc/localtime:/etc/localtime:ro \
+ -v /var/sbfspot/data:/var/smadata \
+ -v /var/sbfspot/config/SBFspotUpload.cfg:/opt/sbfspot/SBFspotUpload.cfg \
+ --name sbfspot-uploader \
+ solarexplorer/sbfspot-sqlite /opt/sbfspot/SBFspotUploadDaemon
+
