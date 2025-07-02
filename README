@@ -1,0 +1,14 @@
+Configuration of RaspberryPi server
+
+Secrets should be in unmanaged .env files
+
+Contains
+- nextcloud + stuff (including collabora server)
+
+TODO
+- mqtt ??
+- influxdb2
+- SBFSpot
+- smarthome stuff
+- letsencrypt
+
