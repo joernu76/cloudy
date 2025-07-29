@@ -1,0 +1,1 @@
+Put configuration into /var/zigbee2mqtt/data and use proper zigbee device into compose file.
