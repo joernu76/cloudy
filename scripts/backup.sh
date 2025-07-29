@@ -7,7 +7,7 @@ mount /media/disk2
 ARGS="-avxR --delete"
 MAIL=/home/pi/cloudy/scripts/mail.sh
 
-source /home/pi/nextcloud/.env
+source /home/pi/cloudy/nextcloud/.env
 
 ####################
 # NextCloud backup
@@ -62,7 +62,7 @@ docker exec nextcloud-nextcloud /var/www/html/occ maintenance:mode --off
 ####################
 
 cd /home/pi/cloudy/influxdb
-docker exec -ti influxdb-influxdb influx backup /backup 
+docker exec influxdb-influxdb influx backup /backup 
 
 INFLUXBACKUP=/media/disk2/influxdb2/influxdb_`date -I`
 mkdir ${INFLUXBACKUP}
