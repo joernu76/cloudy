@@ -8,7 +8,7 @@ unix2dos tst.txt
 curl \
   --url "smtp://${MAIL_SERVER}" --ssl-reqd -ssl --TLSv1.3 -v \
   --mail-from ${MAIL_ACCOUNT} \
-  --mail-rcpt ${MAIL_ACCOUNT} \
+  --mail-rcpt ${MAIL_TARGET} \
   --user "${MAIL_ACCOUNT}:${MAIL_PASSWORD}" \
   -T tst.txt
 
