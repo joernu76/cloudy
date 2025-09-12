@@ -14,6 +14,8 @@ Contains
 - influxdb2
 - SBFSpot
 - letsencrypt
+- zigbee2mqtt
+- homeassistant
 
 TODO
 - integrate smarthome stuff?
