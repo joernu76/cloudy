@@ -14,3 +14,12 @@ services:
     #  - /path/to/device:/path/to/device #optional
     restart: unless-stopped
 
+  signal-cli-rest-api:
+    image: bbernhard/signal-cli-rest-api:latest
+    environment:
+      - MODE=json-rpc #supported modes: json-rpc, native, normal. json-rpc is recommended for speed
+    ports:
+      - 8124:8080 # map docker port 8080 to host port 8080.
+    volumes:
+      - /var/homeassistant/signal:/home/.local/share/signal-cli" 
+      # map "signal-cli-config" folder on host system into docker container. the folder contains the password and cryptographic keys when a new number is registered

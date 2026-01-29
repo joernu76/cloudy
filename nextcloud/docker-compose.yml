@@ -54,6 +54,7 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - PHP_MEMORY_LIMIT=1G
+      - PHP_UPLOAD_LIMIT=1G
 
   # HTTPS is handled by nginx
   collabora:

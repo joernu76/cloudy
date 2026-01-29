@@ -30,7 +30,7 @@ NEWBACKUP=latest-`date -I`
 if [[ -d $OLDBACKUP && ! -d $NEWBACKUP ]]; then
     OLDBACKUP_MOVE=${OLDBACKUP/latest-/}
     mv ${OLDBACKUP} ${OLDBACKUP_MOVE}
-    rsync ${ARGS} --link-dest=`pwd`/${OLDBACKUP_MOVE} /home/pi /media/disk /var/influxdb /var/nextcloud /var/sbfspot ${NEWBACKUP}
+    rsync ${ARGS} --link-dest=`pwd`/${OLDBACKUP_MOVE} /etc /root /home/pi /media/disk /var/homeassistant /var/influxdb /var/nextcloud /var/sbfspot ${NEWBACKUP}
     $MAIL cloudy backup succeeded
 else
     $MAIL cloudy backup failed
