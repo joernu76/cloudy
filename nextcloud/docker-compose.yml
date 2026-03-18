@@ -90,5 +90,20 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf
       - /var/nextcloud/certbot/config/live/nextcloud:/etc/nginx/certs
       - /var/nextcloud/certbot/config/archive:/etc/archive
+      - /var/nextcloud/nginx:/var/log/nginx            # added to logrotate.d
     depends_on:
       - nextcloud
+
+
+  # parse nginx logs to ban ips with many failed accesses
+  fail2ban:
+    image: crazymax/fail2ban:latest
+    container_name: nextcloud-fail2ban
+    restart: always
+    network_mode: host                                  # needs host iptables access
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    volumes:
+      - /var/nextcloud/fail2ban:/data                   # jail configs go here
+      - /var/nextcloud/nginx:/var/log/nginx:ro          # read nginx logs
