@@ -27,7 +27,7 @@ services:
     container_name: nextcloud-phpmyadmin
     restart: always
     ports:
-      - 9021:80
+      - 127.0.0.1:9021:80
     links:
       - mariadb:db
     environment:
@@ -65,11 +65,12 @@ services:
     container_name: nextcloud-collabora
     restart: always
     privileged: false
+    cap_drop:
+      - ALL
     cap_add:
       - MKNOD
-      - SYS_ADMIN     # only if really needed, test without first
-    security_opt:
-      - apparmor:unconfined
+      - FOWNER
+      - SYS_CHROOT
     environment:
       - password=${STANDARD_PASSWORD}
       - username=nextcloud
