@@ -7,6 +7,7 @@ services:
     # TODO
     # mariadb 11.7.2 is actually unsupported, but this prevents it from upgrading further.
     # As soon as a newer version from MariaDB is supported upgrade to that and keep it fixed
+    # Nextcloud 33 / Hub 26 Winter will likely support 11.8
 
     container_name: nextcloud-mariadb
     restart: always
@@ -20,7 +21,9 @@ services:
 
   # Do we need this?
   myadmin:
-    image: phpmyadmin
+    image: phpmyadmin:5
+    depends_on:
+      - mariadb
     container_name: nextcloud-phpmyadmin
     restart: always
     ports:
@@ -33,6 +36,10 @@ services:
 
   nextcloud:
     image: nextcloud:stable
+    depends_on:
+      - mariadb
+      - redis
+      - collabora
     container_name: nextcloud-nextcloud
     restart: always
     links:
@@ -42,10 +49,6 @@ services:
       - /var/nextcloud/apps:/var/www/html/custom_apps 
       - /var/nextcloud/config:/var/www/html/config 
       - /var/nextcloud/data:/var/www/html/data 
-    depends_on:
-      - mariadb
-      - redis
-      - collabora
     environment:
       - MYSQL_PASSWORD=${STANDARD_PASSWORD}
       - MYSQL_DATABASE=nextcloud
@@ -61,7 +64,12 @@ services:
     image: collabora/code
     container_name: nextcloud-collabora
     restart: always
-    privileged: true
+    privileged: false
+    cap_add:
+      - MKNOD
+      - SYS_ADMIN     # only if really needed, test without first
+    security_opt:
+      - apparmor:unconfined
     environment:
       - password=${STANDARD_PASSWORD}
       - username=nextcloud
@@ -70,7 +78,7 @@ services:
       - "extra_params=--o:ssl.enable=false --o:ssl.termination=true"
 
   redis:
-    image: redis
+    image: redis:8
     container_name: nextcloud-redis
     restart: always
     volumes:
