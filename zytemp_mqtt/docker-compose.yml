@@ -8,5 +8,5 @@ services:
         volumes:
           - /dev/bus/usb:/dev/bus/usb          # usbfs tree, so libusb can find 04d9:a052
           - ./config.yaml:/root/.config/zytempmqtt/config.yaml:ro
-            #    device_cgroup_rules:
-            #      - 'c 189:* rmw'                       # 189 = usb character devices
+        device_cgroup_rules:
+          - 'c 189:* rmw'                       # 189 = usb character devices
