@@ -1,0 +1,4 @@
+mqtt_host: cloudy               # MQTT server
+mqtt_port: 1883                 # MQTT port (default: 1883)
+friendly_name: aircontrol       # Friendly name for HomeAssistant (default: zytemp-mqtt)
+decrypt: False                  # Decrypt data from zyTemp
