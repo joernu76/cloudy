@@ -19,7 +19,13 @@ WORKDIR /app
 # NOTE: paho-mqtt 2.x removed the 1.x callback signature that zytempmqtt/mqtt.py
 # uses (mqtt.Client(client_id=...) + on_connect(client, userdata, flags, rc)), so
 # it must stay pinned below 2.0.
-RUN pip install --no-cache-dir . "paho-mqtt<2.0"
+# NOTE: PyPI ships a prebuilt "hidapi" wheel linked against libudev/hidraw, but
+# this sensor doesn't create a /dev/hidraw node on the Pi (no hidraw driver
+# binds to it) — it's only reachable via libusb (device path like
+# "1-1.1:1.0"). --no-binary forces a from-source build, which defaults to the
+# libusb backend (see cython-hidapi's setup.py); HIDAPI_WITH_LIBUSB=1 pins
+# that explicitly.
+RUN HIDAPI_WITH_LIBUSB=1 pip install --no-cache-dir --no-binary hidapi . "paho-mqtt<2.0"
 
 # `zytempmqtt` is the console_scripts entry point declared in setup.py.
 # It reads config from $HOME/.config/zytempmqtt/config.yaml; HOME is /root here,
