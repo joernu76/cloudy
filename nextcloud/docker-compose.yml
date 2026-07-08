@@ -71,6 +71,7 @@ services:
       - MKNOD
       - FOWNER
       - SYS_CHROOT
+      - SYS_ADMIN
     environment:
       - password=${STANDARD_PASSWORD}
       - username=nextcloud
