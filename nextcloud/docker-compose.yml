@@ -7,6 +7,7 @@ services:
     # TODO
     # mariadb 11.7.2 is actually unsupported, but this prevents it from upgrading further.
     # As soon as a newer version from MariaDB is supported upgrade to that and keep it fixed
+    # Nextcloud 33 / Hub 26 Winter will likely support 11.8
 
     container_name: nextcloud-mariadb
     restart: always
@@ -20,11 +21,13 @@ services:
 
   # Do we need this?
   myadmin:
-    image: phpmyadmin
+    image: phpmyadmin:5
+    depends_on:
+      - mariadb
     container_name: nextcloud-phpmyadmin
     restart: always
     ports:
-      - 9021:80
+      - 127.0.0.1:9021:80
     links:
       - mariadb:db
     environment:
@@ -33,6 +36,10 @@ services:
 
   nextcloud:
     image: nextcloud:stable
+    depends_on:
+      - mariadb
+      - redis
+      - collabora
     container_name: nextcloud-nextcloud
     restart: always
     links:
@@ -42,10 +49,6 @@ services:
       - /var/nextcloud/apps:/var/www/html/custom_apps 
       - /var/nextcloud/config:/var/www/html/config 
       - /var/nextcloud/data:/var/www/html/data 
-    depends_on:
-      - mariadb
-      - redis
-      - collabora
     environment:
       - MYSQL_PASSWORD=${STANDARD_PASSWORD}
       - MYSQL_DATABASE=nextcloud
@@ -54,13 +57,21 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - PHP_MEMORY_LIMIT=1G
+      - PHP_UPLOAD_LIMIT=1G
 
   # HTTPS is handled by nginx
   collabora:
     image: collabora/code
     container_name: nextcloud-collabora
     restart: always
-    privileged: true
+    privileged: false
+    cap_drop:
+      - ALL
+    cap_add:
+      - MKNOD
+      - FOWNER
+      - SYS_CHROOT
+      - SYS_ADMIN
     environment:
       - password=${STANDARD_PASSWORD}
       - username=nextcloud
@@ -69,7 +80,7 @@ services:
       - "extra_params=--o:ssl.enable=false --o:ssl.termination=true"
 
   redis:
-    image: redis
+    image: redis:8
     container_name: nextcloud-redis
     restart: always
     volumes:
@@ -89,5 +100,20 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf
       - /var/nextcloud/certbot/config/live/nextcloud:/etc/nginx/certs
       - /var/nextcloud/certbot/config/archive:/etc/archive
+      - /var/nextcloud/nginx:/var/log/nginx            # added to logrotate.d
     depends_on:
       - nextcloud
+
+
+  # parse nginx logs to ban ips with many failed accesses
+  fail2ban:
+    image: crazymax/fail2ban:latest
+    container_name: nextcloud-fail2ban
+    restart: always
+    network_mode: host                                  # needs host iptables access
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    volumes:
+      - /var/nextcloud/fail2ban:/data                   # jail configs go here
+      - /var/nextcloud/nginx:/var/log/nginx:ro          # read nginx logs

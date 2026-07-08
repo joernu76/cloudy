@@ -22,3 +22,70 @@ docker run -dt --restart=unless-stopped \
  --name sbfspot-uploader \
  solarexplorer/sbfspot-sqlite /opt/sbfspot/SBFspotUploadDaemon
 
+# SBFSpot
+
+## Documentation
+https://hub.docker.com/r/solarexplorer/sbfspot-sqlite
+
+## Build custom image with MQTT support
+
+The base image is based on Debian Stretch (EOL) and does not include `mosquitto-clients`,
+which is required for MQTT publishing. Build a custom image first:
+
+```bash
+sudo docker build -t sbfspot-mqtt .
+```
+
+## Commands used to create the containers
+
+```bash
+sudo docker create -t \
+  -v /etc/localtime:/etc/localtime:ro \
+  -v /var/sbfspot/data:/var/smadata \
+  -v /var/sbfspot/config/SBFspot.cfg:/opt/sbfspot/SBFspot.cfg \
+  --device=/dev/tty \
+  --net=host \
+  --name sbfspot-daydata \
+  sbfspot-mqtt /opt/sbfspot/SBFspot -v -ad1 -am0 -ae1 -mqtt
+
+sudo docker create -t \
+  -v /etc/localtime:/etc/localtime:ro \
+  -v /var/sbfspot/data:/var/smadata \
+  -v /var/sbfspot/config/SBFspot.cfg:/opt/sbfspot/SBFspot.cfg \
+  --device=/dev/tty \
+  --net=host \
+  --name sbfspot-monthdata \
+  sbfspot-mqtt /opt/sbfspot/SBFspot -v -sp0 -ad0 -am1 -ae1 -finq
+```
+
+Note: `-mqtt` is only added to `sbfspot-daydata` since that is the container
+providing the 5-minute spot data. Month data collection does not need it.
+
+## Fetch data (crontab)
+*/5 6-22 * * * docker start -a sbfspot-daydata
+55 05 * * * docker start -a sbfspot-monthdata
+
+## Upload to PVOutput
+
+```bash
+docker run -dt --restart=unless-stopped \
+  -v /etc/localtime:/etc/localtime:ro \
+  -v /var/sbfspot/data:/var/smadata \
+  -v /var/sbfspot/config/SBFspotUpload.cfg:/opt/sbfspot/SBFspotUpload.cfg \
+  --name sbfspot-uploader \
+  sbfspot-mqtt /opt/sbfspot/SBFspotUploadDaemon
+```
+
+## SBFspot.cfg MQTT settings
+```ini
+MQTT_Publisher=/usr/bin/mosquitto_pub
+MQTT_Host=localhost
+MQTT_Topic=sbfspot_{serial}
+MQTT_ItemFormat="{key}": {value}
+MQTT_ItemDelimiter=,
+MQTT_PublisherArgs=-h {host} -t {topic} -m "{{message}}"
+MQTT_Data=Timestamp,InvStatus,EToday,ETotal,PACTot,PDC1,PDC2,UDC1,UDC2,InvTemperature
+```
+
+## Home Assistant MQTT sensors
+See `sbfspot_sensors.yaml` for the sensor configuration.

@@ -1,0 +1,49 @@
+    - name: "SBFspot Status"
+      state_topic: "sbfspot"
+      value_template: "{{ value_json.InvStatus }}"
+      unique_id: sbfspot_invstatus
+
+    - name: "SBFspot Energy Today"
+      state_topic: "sbfspot"
+      value_template: "{{ value_json.EToday }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
+      unique_id: sbfspot_etoday
+
+    - name: "SBFspot Energy Total"
+      state_topic: "sbfspot"
+      value_template: "{{ value_json.ETotal }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
+      unique_id: sbfspot_etotal
+
+    - name: "SBFspot AC Power"
+      state_topic: "sbfspot"
+      value_template: "{{ value_json.PACTot }}"
+      unit_of_measurement: "W"
+      device_class: power
+      state_class: measurement
+      unique_id: sbfspot_pactot
+
+    - name: "SBFspot DC Power String 1"
+      state_topic: "sbfspot"
+      value_template: "{{ value_json.PDC1 }}"
+      unit_of_measurement: "W"
+      device_class: power
+      state_class: measurement
+      unique_id: sbfspot_pdc1
+
+    - name: "SBFspot DC Power String 2"
+      state_topic: "sbfspot"
+      value_template: "{{ value_json.PDC2 }}"
+      unit_of_measurement: "W"
+      device_class: power
+      state_class: measurement
+      unique_id: sbfspot_pdc2
+
+    - name: "SBFspot DC Voltage String 1"
+      state_topic: "sbfspot"
+      value_template: "{{ value_json.UDC1 }}"
+      unit_of_measurement: "V"
