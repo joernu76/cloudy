@@ -41,8 +41,15 @@ services:
       - /var/paperless/consume:/usr/src/paperless/consume
       - /var/paperless/tessdata/deu.traineddata:/usr/share/tesseract-ocr/5/tessdata/deu.traineddata:ro
       - /var/paperless/tessdata/eng.traineddata:/usr/share/tesseract-ocr/5/tessdata/eng.traineddata:ro
-    env_file: docker-compose.env
     environment:
       PAPERLESS_REDIS: redis://broker:6379
       PAPERLESS_DBHOST: db
       PAPERLESS_DBENGINE: postgresql
+      PAPERLESS_DBPASS: ${PAPERLESS_DB_PASSWORD}
+      PAPERLESS_SECRET_KEY: ${PAPERLESS_SECRET_KEY}
+      PAPERLESS_TIME_ZONE: Europe/Berlin
+      PAPERLESS_OCR_LANGUAGE: deu+eng
+      PAPERLESS_ADMIN_USER: ${PAPERLESS_ADMIN_USER}
+      PAPERLESS_ADMIN_PASSWORD: ${PAPERLESS_ADMIN_PASSWORD}
+      USERMAP_UID: 1000
+      USERMAP_GID: 1000

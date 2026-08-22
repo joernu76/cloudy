@@ -7,21 +7,19 @@ with bind mounts to `/var/paperless/` and tessdata_best for better OCR quality.
 
 ## Setup
 
-1. Edit `.env` with the database password:
+1. Copy `.env.example` to `.env` and fill in the values:
 
    ```
-   COMPOSE_PROJECT_NAME=paperless
-   PAPERLESS_DB_PASSWORD=<your-password>
+   cp .env.example .env
+   nano .env
    ```
 
-2. Edit `docker-compose.env` with your paperless settings. At minimum set:
-
+   Generate the secret key with:
    ```
-   PAPERLESS_SECRET_KEY=<generate with: python3 -c "import secrets; print(secrets.token_urlsafe(64))">
-   PAPERLESS_ADMIN_PASSWORD=<your-password>
+   python3 -c "import secrets; print(secrets.token_urlsafe(64))"
    ```
 
-3. Download tessdata_best for higher-quality OCR (German + English):
+2. Download tessdata_best for higher-quality OCR (German + English):
 
    ```
    sudo bash setup-tessdata.sh
@@ -31,13 +29,13 @@ with bind mounts to `/var/paperless/` and tessdata_best for better OCR quality.
    The compose file mounts the individual `.traineddata` files into the container,
    replacing the default "fast" models without clobbering other tessdata files.
 
-4. Start the stack:
+3. Start the stack:
 
    ```
    docker compose up -d
    ```
 
-5. Open `http://cloudy:8000` and log in with the admin credentials from `docker-compose.env`.
+4. Open `http://cloudy:8000` and log in with the admin credentials from `.env`.
 
 ## Adding OCR languages
 
@@ -48,7 +46,7 @@ To add another language (e.g. French):
    ```
    - /var/paperless/tessdata/fra.traineddata:/usr/share/tesseract-ocr/5/tessdata/fra.traineddata:ro
    ```
-3. Add the language code to `PAPERLESS_OCR_LANGUAGE` in `docker-compose.env`:
+3. Add the language code to `PAPERLESS_OCR_LANGUAGE` in `docker-compose.yml`:
    ```
    PAPERLESS_OCR_LANGUAGE=deu+eng+fra
    ```

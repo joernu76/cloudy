@@ -10,6 +10,10 @@ BASE_URL="https://github.com/tesseract-ocr/tessdata_best/raw/main"
 mkdir -p "$DEST"
 
 for lang in deu eng; do
+    # Remove directory if Docker auto-created one as a mount placeholder
+    if [ -d "${DEST}/${lang}.traineddata" ]; then
+        rmdir "${DEST}/${lang}.traineddata"
+    fi
     echo "Downloading ${lang}.traineddata ..."
     curl -L -o "${DEST}/${lang}.traineddata" "${BASE_URL}/${lang}.traineddata"
 done
