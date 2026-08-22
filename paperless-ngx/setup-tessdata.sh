@@ -9,7 +9,7 @@ BASE_URL="https://github.com/tesseract-ocr/tessdata_best/raw/main"
 
 mkdir -p "$DEST"
 
-for lang in deu eng osd; do
+for lang in deu eng; do
     echo "Downloading ${lang}.traineddata ..."
     curl -L -o "${DEST}/${lang}.traineddata" "${BASE_URL}/${lang}.traineddata"
 done
