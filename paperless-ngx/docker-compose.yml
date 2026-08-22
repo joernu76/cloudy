@@ -31,6 +31,7 @@ services:
       - /var/paperless/media:/usr/src/paperless/media
       - /var/paperless/export:/usr/src/paperless/export
       - /var/paperless/consume:/usr/src/paperless/consume
+      - /var/paperless/tessdata:/usr/share/tesseract-ocr/5/tessdata
     environment:
       PAPERLESS_REDIS: redis://broker:6379
       PAPERLESS_DBHOST: db
