@@ -8,6 +8,7 @@ CLOUDY=/home/pi/cloudy
 update_stack() {
     cd "$CLOUDY/$1"
     docker compose pull -q
+    docker compose down
     docker compose up -d
 }
 
