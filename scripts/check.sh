@@ -35,12 +35,12 @@ for c in \
     paperless-db \
     pihole \
     wireguard \
-    comfoair \
-    zigbee2mqtt \
-    zytempmqtt \
 ; do
     check "container: $c" docker inspect -f '{{.State.Running}}' "$c"
 done
+
+# Systemd services
+check "systemd: hacomfoairmqtt" systemctl is-active --quiet hacomfoairmqtt.service
 
 # Service-level checks
 check "nextcloud: https"       curl -sfk --max-time 5 https://localhost:1124/status.php
