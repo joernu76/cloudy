@@ -14,9 +14,9 @@ source /home/pi/cloudy/nextcloud/.env
 ####################
 
 cd /home/pi/cloudy/nextcloud
-docker-compose down
+docker compose down
 cd /home/pi/cloudy/influxdb
-docker-compose down
+docker compose down
 
 cd /media/disk2/cloudy
 
@@ -30,7 +30,7 @@ NEWBACKUP=latest-`date -I`
 if [[ -d $OLDBACKUP && ! -d $NEWBACKUP ]]; then
     OLDBACKUP_MOVE=${OLDBACKUP/latest-/}
     mv ${OLDBACKUP} ${OLDBACKUP_MOVE}
-    rsync ${ARGS} --link-dest=`pwd`/${OLDBACKUP_MOVE} /etc /root /home/pi /media/disk /var/pihole /var/homeassistant /var/influxdb /var/nextcloud /var/sbfspot ${NEWBACKUP}
+    rsync ${ARGS} --link-dest=`pwd`/${OLDBACKUP_MOVE} /etc /root /home/pi /media/disk /var/pihole /var/homeassistant /var/influxdb /var/nextcloud /var/sbfspot /var/paperless ${NEWBACKUP}
     $MAIL cloudy backup succeeded
 else
     $MAIL cloudy backup failed
@@ -38,9 +38,9 @@ fi
 
 export COMPOSE_HTTP_TIMEOUT=240
 cd /home/pi/cloudy/nextcloud
-docker-compose up -d
+docker compose up -d
 cd /home/pi/cloudy/influxdb
-docker-compose up -d
+docker compose up -d
 
 sleep 120  # let everything start properly
 
