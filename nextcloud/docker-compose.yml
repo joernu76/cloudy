@@ -1,17 +1,10 @@
-version:
-  "3"
 services:
   mariadb:
-    image: mariadb:11.7.2
-
-    # TODO
-    # mariadb 11.7.2 is actually unsupported, but this prevents it from upgrading further.
-    # As soon as a newer version from MariaDB is supported upgrade to that and keep it fixed
-    # Nextcloud 33 / Hub 26 Winter will likely support 11.8
+    image: mariadb:11.8
 
     container_name: nextcloud-mariadb
     restart: always
-    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW --innodb-file-per-table=1 --skip-innodb-read-only-compressed
+    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW --skip-innodb-read-only-compressed
     volumes:
       - /var/nextcloud/mariadb:/var/lib/mysql
     environment:
@@ -28,11 +21,10 @@ services:
     restart: always
     ports:
       - 127.0.0.1:9021:80
-    links:
-      - mariadb:db
     environment:
       - MYSQL_USER=root
       - MYSQL_PASSWORD=${STANDARD_PASSWORD}
+      - PMA_HOST=mariadb
 
   nextcloud:
     image: nextcloud:stable
@@ -42,8 +34,6 @@ services:
       - collabora
     container_name: nextcloud-nextcloud
     restart: always
-    links:
-      - mariadb:mysql
     volumes:
       - /var/nextcloud/nextcloud:/var/www/html 
       - /var/nextcloud/apps:/var/www/html/custom_apps 
@@ -58,6 +48,7 @@ services:
       - REDIS_PORT=6379
       - PHP_MEMORY_LIMIT=1G
       - PHP_UPLOAD_LIMIT=1G
+      - TRUSTED_PROXIES=nginx
 
   # HTTPS is handled by nginx
   collabora:
