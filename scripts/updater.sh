@@ -2,14 +2,22 @@
 date
 export COMPOSE_HTTP_TIMEOUT=240
 
-# nextcloud
-cd /home/pi/cloudy/nextcloud
-docker-compose down
-docker-compose pull
-docker-compose up -d
+MAIL=/home/pi/cloudy/scripts/mail.sh
+CLOUDY=/home/pi/cloudy
 
-# influxdb
-cd /home/pi/cloudy/influxdb
-docker-compose down
-docker-compose pull
-docker-compose up -d
+update_stack() {
+    cd "$CLOUDY/$1"
+    docker compose pull -q
+    docker compose up -d
+}
+
+update_stack nextcloud
+update_stack influxdb
+update_stack wireguard
+
+# Check for Docker CE updates (don't install, just notify)
+apt update -qq
+DOCKER_UPDATE=$(apt list --upgradable 2>/dev/null | grep docker-ce || true)
+if [ -n "$DOCKER_UPDATE" ]; then
+    $MAIL "docker-ce update available: $DOCKER_UPDATE"
+fi
