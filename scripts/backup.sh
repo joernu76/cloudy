@@ -10,12 +10,14 @@ CLOUDY=/home/pi/cloudy
 export COMPOSE_HTTP_TIMEOUT=240
 ERRORS=""
 
+trap 'ERRORS="${ERRORS}FAILED: ${BASH_COMMAND}\n"' ERR
+
 source ${CLOUDY}/nextcloud/.env
 
 cd /media/disk2/cloudy
 
 AVAIL=$(df --output=avail -BG . | tail -n 1 | sed s/G//)
-if (( AVAIL < 500 )); then
+if [[ $AVAIL -lt 500 ]]; then
     ERRORS="${ERRORS}disk nearly full (${AVAIL}G free)\n"
 fi
 
@@ -24,11 +26,11 @@ fi
 ####################
 
 cd ${CLOUDY}/nextcloud
-docker compose down       || ERRORS="${ERRORS}nextcloud down failed\n"
+docker compose down
 cd ${CLOUDY}/influxdb
-docker compose down       || ERRORS="${ERRORS}influxdb down failed\n"
+docker compose down
 cd ${CLOUDY}/paperless-ngx
-docker compose down       || ERRORS="${ERRORS}paperless down failed\n"
+docker compose down
 
 ####################
 # Filesystem backup
@@ -41,8 +43,7 @@ NEWBACKUP=latest-$(date -I)
 if [[ -n $OLDBACKUP && ! -d $NEWBACKUP ]]; then
     OLDBACKUP_MOVE=${OLDBACKUP/latest-/}
     mv ${OLDBACKUP} ${OLDBACKUP_MOVE}
-    rsync ${ARGS} --link-dest=$(pwd)/${OLDBACKUP_MOVE} /etc /root /home/pi /media/disk /var/pihole /var/homeassistant /var/influxdb /var/nextcloud /var/sbfspot /var/paperless /var/wireguard ${NEWBACKUP} \
-        || ERRORS="${ERRORS}rsync failed (exit $?)\n"
+    rsync ${ARGS} --link-dest=$(pwd)/${OLDBACKUP_MOVE} /etc /root /home/pi /media/disk /var/pihole /var/homeassistant /var/influxdb /var/nextcloud /var/sbfspot /var/paperless /var/wireguard ${NEWBACKUP}
 else
     ERRORS="${ERRORS}no previous backup or target already exists\n"
 fi
@@ -52,11 +53,11 @@ fi
 ####################
 
 cd ${CLOUDY}/nextcloud
-docker compose up -d --wait   || ERRORS="${ERRORS}nextcloud up failed\n"
+docker compose up -d --wait
 cd ${CLOUDY}/influxdb
-docker compose up -d --wait   || ERRORS="${ERRORS}influxdb up failed\n"
+docker compose up -d --wait
 cd ${CLOUDY}/paperless-ngx
-docker compose up -d --wait   || ERRORS="${ERRORS}paperless up failed\n"
+docker compose up -d --wait
 
 sleep 120
 
@@ -67,8 +68,7 @@ sleep 120
 docker exec nextcloud-nextcloud /var/www/html/occ maintenance:mode --on
 
 SQLBACKUP=nextcloud-sqlbkp_$(date -I).backup
-docker exec nextcloud-mariadb sh -c 'mariadb-dump --all-databases --default-character-set=utf8mb4 -uroot -p"${MARIADB_ROOT_PASSWORD}"' > /media/disk2/mariadb/${SQLBACKUP} \
-    || ERRORS="${ERRORS}mariadb dump failed\n"
+docker exec nextcloud-mariadb sh -c 'mariadb-dump --all-databases --default-character-set=utf8mb4 -uroot -p"${MARIADB_ROOT_PASSWORD}"' > /media/disk2/mariadb/${SQLBACKUP}
 
 docker exec nextcloud-nextcloud /var/www/html/occ maintenance:mode --off
 
@@ -76,15 +76,13 @@ docker exec nextcloud-nextcloud /var/www/html/occ maintenance:mode --off
 # Paperless PostgreSQL dump
 ####################
 
-docker exec paperless-db pg_dumpall -U paperless > /media/disk2/paperless/paperless-sqlbkp_$(date -I).backup \
-    || ERRORS="${ERRORS}paperless pg_dump failed\n"
+docker exec paperless-db pg_dumpall -U paperless > /media/disk2/paperless/paperless-sqlbkp_$(date -I).backup
 
 ####################
 # InfluxDB dump
 ####################
 
-docker exec influxdb-influxdb influx backup /backup \
-    || ERRORS="${ERRORS}influxdb dump failed\n"
+docker exec influxdb-influxdb influx backup /backup
 
 INFLUXBACKUP=/media/disk2/influxdb2/influxdb_$(date -I)
 mkdir -p ${INFLUXBACKUP}
@@ -103,4 +101,3 @@ if [[ -n $ERRORS ]]; then
 else
     $MAIL cloudy backup succeeded
 fi
-
