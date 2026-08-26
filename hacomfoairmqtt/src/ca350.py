@@ -26,6 +26,7 @@ import sys
 import configparser
 import os
 import json
+import socket
 
 # Read configuration from ini file
 config = configparser.ConfigParser()
@@ -82,6 +83,54 @@ def warning_msg(message):
 
 def info_msg(message):
     print('{0} INFO: {1}'.format(time.strftime("%d-%m-%Y %H:%M:%S", time.gmtime()), message))
+
+# The CA350 is not on a local serial port here but behind an RS232-over-TCP
+# bridge, so the "serial" connection can die at any time (bridge reboot, WiFi
+# drop, another client taking the single server slot). Everything below keeps
+# that connection alive without flooding the log.
+SerialHost = "192.168.178.48"
+SerialTCPPort = 8899
+SerialWarnInterval = 60   # seconds between repeated failure warnings
+SerialDeadTimeout = 300   # exit after this many seconds without a single reply
+
+ser = None
+serial_last_warning = 0.0
+serial_last_success = 0.0
+
+def serial_warning(message):
+    # The same failure repeats ten times per poll cycle. Logging every one of
+    # them once flooded the journal and pushed all other history out of it.
+    global serial_last_warning
+    now = time.monotonic()
+    if now - serial_last_warning >= SerialWarnInterval:
+        serial_last_warning = now
+        warning_msg(message)
+        if sys.exc_info()[0] is not None:
+            warning_msg(sys.exc_info())
+
+def serial_close():
+    global ser
+    if ser is not None:
+        try:
+            ser.close()
+        except:
+            pass
+        ser = None
+
+def serial_connect():
+    global ser
+    serial_close()
+    try:
+        # ser = serial.Serial(port = SerialPort, baudrate = 9600, bytesize = serial.EIGHTBITS, parity = serial.PARITY_NONE, stopbits = serial.STOPBITS_ONE)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(3)
+        sock.connect((SerialHost, SerialTCPPort))
+    except:
+        serial_warning('Connecting to the serial bridge {0}:{1} failed:'.format(SerialHost, SerialTCPPort))
+        return False
+    ser = sock
+    info_msg('Connected to the serial bridge {0}:{1}'.format(SerialHost, SerialTCPPort))
+    return True
 
 # Get the checksum from the serial data (third to last byte)
 def get_returned_checksum(serial_data):
@@ -247,21 +296,39 @@ def delete_message(mqtt_path):
         debug_msg('delete topic {0} at {1}'.format(mqtt_path, time.asctime(time.localtime(time.time()))))
 
 def serial_command(cmd):
+    global serial_last_success
+    if ser is None:
+        return None
     try:
         data = b''
-        ser.write(cmd)
+        ser.sendall(cmd)
         time.sleep(2)
 
-        while ser.inWaiting() > 0:
-            data += ser.read(1)
+        data = ser.recv(1024)
         if len(data) > 0:
+            serial_last_success = time.monotonic()
             return data
         else:
+            # An empty recv() means the bridge closed the connection. Without
+            # dropping the socket here every later call would keep failing.
+            serial_warning('Serial connection closed by the bridge')
+            serial_close()
             return None
-    except:
-        warning_msg('Serial command write and read exception:')
-        warning_msg(sys.exc_info())
+    except socket.timeout:
+        # Late or missing reply on a shared bus, the connection is still fine.
+        serial_warning('Serial command timed out:')
         return None
+    except:
+        serial_warning('Serial command write and read exception:')
+        serial_close()
+        return None
+
+def serial_ack():
+    try:
+        ser.sendall(b'\x07\xF3')
+    except:
+        serial_warning('Sending the ACK failed:')
+        serial_close()
 
 # Write serial data for the given command and data.
 # Start, end as well as the length and checksum are added automatically.
@@ -293,7 +360,7 @@ def send_command(command, data, expect_reply=True):
             result_command = result_command_int.to_bytes(2, byteorder='big')
             filtered_result = filter_and_validate(result, result_command)
             if filtered_result:
-                ser.write(b'\x07\xF3')  # Send an ACK after receiving the correct result
+                serial_ack()  # Send an ACK after receiving the correct result
                 return filtered_result
     else:
         # TODO: Maybe check if there was an "ACK", but given the noise on the serial bus, not sure if that makes sense.
@@ -925,7 +992,7 @@ def send_autodiscover(name, entity_id, entity_type, state_topic = None, device_c
     debug_msg('Sending autodiscover for ' + mqtt_config_topic)
     publish_message(mqtt_message, mqtt_config_topic)
 
-def on_connect(client, userdata, flags, reason_code, properties):
+def on_connect(client, userdata, flags, reason_code):#, properties):
     publish_message("online","comfoair/status")
 	# Temporary: deletion of old topic for Fan entity auto discovery
     delete_message("homeassistant/fan/ca350_fan/config")
@@ -1134,7 +1201,8 @@ def on_disconnect(client, userdata, flags, reason_code, properties):
 ###
 
 # Connect to the MQTT broker
-mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, 'CA350')
+#mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, 'CA350')
+mqttc = mqtt.Client('CA350')
 if  MQTTUser != False and MQTTPassword != False :
     mqttc.username_pw_set(MQTTUser,MQTTPassword)
 
@@ -1155,23 +1223,23 @@ while True:
         time.sleep(10)
         pass
 
-# Open the serial port
-try:
-    ser = serial.Serial(port = SerialPort, baudrate = 9600, bytesize = serial.EIGHTBITS, parity = serial.PARITY_NONE, stopbits = serial.STOPBITS_ONE)
-except:
-    warning_msg('Opening serial port exception:')
-    warning_msg(sys.exc_info())
-else:
-    if RS485_protocol == False: 
-        if enablePcMode:
-            set_pc_mode(3)
-        else:
-            set_pc_mode(0)  # If PC mode is disabled, deactivate it (in case it was activated in an earlier run)
-    if SetUpFanLevelsAtStart:
-        set_fan_levels(Intake=True, Exhaust=True)
-    mqttc.loop_start()
-    while True:
-        try:
+# Open the serial connection
+serial_connect()
+serial_last_success = time.monotonic()
+
+if RS485_protocol == False:
+    if enablePcMode:
+        set_pc_mode(3)
+    else:
+        set_pc_mode(0)  # If PC mode is disabled, deactivate it (in case it was activated in an earlier run)
+if SetUpFanLevelsAtStart:
+    set_fan_levels(Intake=True, Exhaust=True)
+mqttc.loop_start()
+while True:
+    try:
+        if ser is None:
+            serial_connect()
+        if ser is not None:
             if RS485_protocol == False:
                 get_temp()
                 get_fan_status()
@@ -1188,12 +1256,19 @@ else:
                 get_fan_status_rs485()
                 get_parameters1_rs485()
                 get_parameters2_rs485()
-            time.sleep(refresh_interval)
-            pass
-        except KeyboardInterrupt:
+        if time.monotonic() - serial_last_success > SerialDeadTimeout:
+            # Reconnecting is not getting us anywhere. Exit so that systemd
+            # restarts us from scratch instead of looping here forever.
+            warning_msg('No serial data for {0} seconds, exiting to be restarted'.format(SerialDeadTimeout))
             mqttc.loop_stop()
-            ser.close()
-            break
+            serial_close()
+            sys.exit(1)
+        time.sleep(refresh_interval)
+        pass
+    except KeyboardInterrupt:
+        mqttc.loop_stop()
+        serial_close()
+        break
 
 
 # End of program

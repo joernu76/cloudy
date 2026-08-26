@@ -1,0 +1,16 @@
+[Unit]
+Description=HA ComfoAir MQTT server
+Requires=network-online.target
+# The service exits on purpose when the serial bridge stays unreachable, so
+# never let systemd give up on restarting it.
+StartLimitIntervalSec=0
+
+[Service]
+User=pi
+WorkingDirectory=/home/pi/cloudy/hacomfoairmqtt/src
+ExecStart=/usr/bin/python /home/pi/cloudy/hacomfoairmqtt/src/ca350.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

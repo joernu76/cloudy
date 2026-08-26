@@ -21,12 +21,12 @@ services:
       - FAN_IN_LOW=30
       - FAN_IN_MID=50
       - FAN_IN_HIGH=70
-      - SETUP_FAN_LEVELS_AT_START=True
-      - MQTT_SERVER=mosquitto.domain.tld
+      - SETUP_FAN_LEVELS_AT_START=False
+      - MQTT_SERVER=192.168.178.98
       - MQTT_PORT=1883
       - MQTT_KEEPALIVE=45
-      - MQTT_USER=username
-      - MQTT_PASSWORD=password
+      - MQTT_USER=
+      - MQTT_PASSWORD=
       - HA_ENABLE_AUTO_DISCOVERY_SENSORS=True
       - HA_ENABLE_AUTO_DISCOVERY_CLIMATE=True
       - HA_AUTO_DISCOVERY_DEVICE_ID=ca350
