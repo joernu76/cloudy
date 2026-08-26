@@ -61,22 +61,22 @@ Each peer listed in `WG_PEERS` gets a config + QR code:
 
 ```bash
 # Show QR code for a peer in the terminal
-docker exec wireguard /app/show-peer android-joern
-docker exec wireguard /app/show-peer iphone-joern
+docker exec wireguard /app/show-peer androidjoern
+docker exec wireguard /app/show-peer iphonejoern
 ```
 
 Or find the config files directly:
 
 ```
-/var/wireguard/config/peer_android-joern/peer_android-joern.conf
-/var/wireguard/config/peer_android-joern/peer_android-joern.png   # QR code image
+/var/wireguard/config/peer_androidjoern/peer_androidjoern.conf
+/var/wireguard/config/peer_androidjoern/peer_androidjoern.png   # QR code image
 ```
 
 ## 5. Install on Android
 
 1. Install **WireGuard** from Google Play Store
 2. Open the app → tap **+** → **Scan from QR code**
-3. Scan the QR code shown by `docker exec wireguard /app/show-peer android-joern`
+3. Scan the QR code shown by `docker exec wireguard /app/show-peer androidjoern`
 4. Name the tunnel (e.g. "Home")
 5. Toggle the tunnel on — you're connected
 
@@ -84,13 +84,13 @@ Or find the config files directly:
 
 1. Install **WireGuard** from the App Store
 2. Open the app → tap **+** → **Create from QR code**
-3. Scan the QR code shown by `docker exec wireguard /app/show-peer iphone-joern`
+3. Scan the QR code shown by `docker exec wireguard /app/show-peer iphonejoern`
 4. Name the tunnel (e.g. "Home") and allow the VPN configuration when prompted
 5. Toggle the tunnel on — you're connected
 
 ## Adding More Peers
 
-1. Edit `.env` and add the new peer name to `WG_PEERS` (comma-separated)
+1. Edit `.env` and add the new peer name to `WG_PEERS` (comma-separated, **alphanumeric only** — no hyphens or special characters)
 2. Recreate the container:
    ```bash
    docker compose up -d --force-recreate
@@ -111,7 +111,7 @@ docker exec wireguard wg show
 
 ## DNS
 
-`PEERDNS` is set to `192.168.178.71` (cloudy) so VPN clients use Pi-hole
+`PEERDNS` is set to `172.17.0.1` (Docker host bridge) so VPN clients use Pi-hole
 for DNS resolution, getting ad-blocking while on VPN. Change to
 `192.168.178.1` to use the FritzBox DNS instead, or `1.1.1.1` for
 Cloudflare.
