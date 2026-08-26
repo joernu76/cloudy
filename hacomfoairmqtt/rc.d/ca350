@@ -1,0 +1,86 @@
+#!/bin/sh
+#
+# PROVIDE: ca350
+# REQUIRE: LOGIN
+# KEYWORD: shutdown
+#
+# ca350_enable: Set to YES to enable the ca350 service.
+#		Default: NO
+# ca350_user: The user account used to run the ca350 daemon.
+#		This is optional, however do not specifically set this to an
+#		empty string as this will cause the daemon to run as root.
+#		Default: hass
+# ca350_group: The group account used to run the ca350 daemon.
+#		This is optional, however do not specifically set this to an
+#		empty string as this will cause the daemon to run with group wheel.
+#		Default: hass
+# ca350_venv: Directory where ca350 virtualenv is located.
+#		Default: "/usr/local/share/ca350"
+#
+# -------------------------------------------------------
+# Copy this file to '/usr/local/etc/rc.d/ca350' 
+# `chmod +x /usr/local/etc/rc.d/ca350`
+# `sysrc ca350_enable=yes`
+# `service ca350 start`
+# -------------------------------------------------------
+
+. /etc/rc.subr
+name=ca350
+rcvar=${name}_enable
+
+pidfile_child="/var/run/${name}.pid"
+pidfile="/var/run/${name}_daemon.pid"
+logfile="/var/log/${name}_daemon.log"
+
+: ${ca350_enable:="YES"}
+: ${ca350_user:="homeassistant"}
+: ${ca350_group:="homeassistant"}
+: ${appdaemon_group:="`id -gn ${ca350_user}`"}
+: ${ca350_venv:="/usr/local/share/ca350"}
+
+command="/usr/sbin/daemon"
+
+extra_commands="restart test"
+
+start_precmd=${name}_precmd
+ca350_precmd() {
+    rc_flags="-f -o ${logfile} -P ${pidfile} -p ${pidfile_child} ${ca350_venv}/bin/ca350.py ${rc_flags}"
+    [ ! -e "${pidfile_child}" ] && install -g ${ca350_group} -o ${ca350_user} -- /dev/null "${pidfile_child}"
+    [ ! -e "${pidfile}" ] && install -g ${ca350_group} -o ${ca350_user} -- /dev/null "${pidfile}"
+    [ ! -e "${logfile}" ] && rm -f -- "${logfile}"
+    install -g ${ca350_group} -o ${ca350_user} -- /dev/null "${logfile}"
+}
+
+stop_postcmd=${name}_postcmd
+ca350_postcmd() {
+    rm -f -- "${pidfile}"
+    rm -f -- "${pidfile_child}"
+}
+
+restart_cmd="${name}_restart"
+ca350_restart() {
+    service ${name} stop
+    sleep 1
+    service ${name} start
+}
+
+
+test_cmd="${name}_test"
+ca350_test() {
+    echo -e "\nTesting virtualenv...\n"
+    [ ! -d "${ca350_venv}" ] && echo -e " NO DIRECTORY: ${ca350_venv}\n" && exit
+    [ ! -f "${ca350_venv}/bin/activate" ] && echo -e " NO FILE: ${ca350_venv}/bin/activate\n" && exit
+
+    ## Switch users / activate virtualenv / run a command
+    su "${ca350_user}" -c '
+      source ${@}/bin/activate || exit 2
+      echo " $(python --version)" || exit 3
+      echo " ca350 $(pip3 show ca350 | grep Version | cut -d" " -f2)" || exit 4
+      deactivate
+    ' _ ${ca350_venv}
+
+    [ $? != 0 ] && echo "exit $?"
+}
+
+load_rc_config ${name}
+run_rc_command "$1"
