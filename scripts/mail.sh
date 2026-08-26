@@ -6,7 +6,7 @@ echo >> tst.txt
 unix2dos tst.txt
 
 curl \
-  --url "smtp://${MAIL_SERVER}" --ssl-reqd -ssl --TLSv1.3 -v \
+  --url "smtp://${MAIL_SERVER}" --ssl-reqd -ssl --TLSv1.3 -s --show-error \
   --mail-from ${MAIL_ACCOUNT} \
   --mail-rcpt ${MAIL_TARGET} \
   --user "${MAIL_ACCOUNT}:${MAIL_PASSWORD}" \
