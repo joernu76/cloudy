@@ -992,7 +992,7 @@ def send_autodiscover(name, entity_id, entity_type, state_topic = None, device_c
     debug_msg('Sending autodiscover for ' + mqtt_config_topic)
     publish_message(mqtt_message, mqtt_config_topic)
 
-def on_connect(client, userdata, flags, reason_code):#, properties):
+def on_connect(client, userdata, flags, rc):
     publish_message("online","comfoair/status")
 	# Temporary: deletion of old topic for Fan entity auto discovery
     delete_message("homeassistant/fan/ca350_fan/config")
@@ -1191,8 +1191,8 @@ def on_connect(client, userdata, flags, reason_code):#, properties):
         delete_message("homeassistant/climate/ca350_climate/config")
     topic_subscribe()
 
-def on_disconnect(client, userdata, flags, reason_code, properties):
-    if reason_code != 0:
+def on_disconnect(client, userdata, rc):
+    if rc != 0:
         warning_msg('Unexpected disconnection from MQTT, trying to reconnect')
         recon()
 
