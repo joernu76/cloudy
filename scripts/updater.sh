@@ -25,15 +25,19 @@ for i in $(seq 1 30); do
     sleep 5
 done
 
-echo "Running occ upgrade..."
-if ! docker compose exec -u www-data nextcloud php occ upgrade 2>&1; then
-    $MAIL "nextcloud occ upgrade failed — check manually"
-fi
-docker compose exec -u www-data nextcloud php occ maintenance:mode --off
+if ! docker compose exec nextcloud php -r 'echo "ok";' >/dev/null 2>&1; then
+    $MAIL "nextcloud container not ready after 30 attempts — check manually"
+else
+    echo "Running occ upgrade..."
+    if ! docker compose exec -u www-data nextcloud php occ upgrade 2>&1; then
+        $MAIL "nextcloud occ upgrade failed — check manually"
+    fi
+    docker compose exec -u www-data nextcloud php occ maintenance:mode --off
 
-# Restart the container to clear PHP's OPcache — stale bytecode from the
-# pre-upgrade files causes Apache worker segfaults after a version bump.
-docker compose restart nextcloud
+    # Restart the container to clear PHP's OPcache — stale bytecode from the
+    # pre-upgrade files causes Apache worker segfaults after a version bump.
+    docker compose restart nextcloud
+fi
 
 update_stack influxdb
 update_stack wireguard
