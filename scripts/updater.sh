@@ -16,23 +16,24 @@ update_stack nextcloud
 
 # Run the Nextcloud database/schema upgrade that the web UI otherwise
 # demands via a manual button press.  No-op when versions already match.
+cd "$CLOUDY/nextcloud"
 echo "Waiting for nextcloud container to be ready..."
 for i in $(seq 1 30); do
-    if docker exec nextcloud-nextcloud php -r 'echo "ok";' >/dev/null 2>&1; then
+    if docker compose exec nextcloud php -r 'echo "ok";' >/dev/null 2>&1; then
         break
     fi
     sleep 5
 done
 
 echo "Running occ upgrade..."
-if ! docker exec -u www-data nextcloud-nextcloud php occ upgrade 2>&1; then
+if ! docker compose exec -u www-data nextcloud php occ upgrade 2>&1; then
     $MAIL "nextcloud occ upgrade failed — check manually"
 fi
-docker exec -u www-data nextcloud-nextcloud php occ maintenance:mode --off
+docker compose exec -u www-data nextcloud php occ maintenance:mode --off
 
 # Restart the container to clear PHP's OPcache — stale bytecode from the
 # pre-upgrade files causes Apache worker segfaults after a version bump.
-docker compose -f "$CLOUDY/nextcloud/docker-compose.yml" restart nextcloud
+docker compose restart nextcloud
 
 update_stack influxdb
 update_stack wireguard
