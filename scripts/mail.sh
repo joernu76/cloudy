@@ -1,7 +1,7 @@
 #!/bin/bash
 source /home/pi/cloudy/scripts/.env.mail
 echo "Subject: cloudy" > tst.txt
-echo $* >> tst.txt
+printf "%s\n" "$*" >> tst.txt
 echo >> tst.txt
 unix2dos tst.txt
 

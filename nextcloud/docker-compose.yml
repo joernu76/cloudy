@@ -11,6 +11,17 @@ services:
       - MARIADB_ROOT_PASSWORD=${STANDARD_PASSWORD}
       - MARIADB_DATABASE=nextcloud
       - MARIADB_USER=root
+      # Run mariadb-upgrade (after backing up system tables) on version change.
+      - MARIADB_AUTO_UPGRADE=1
+    # Ping over TCP, which is what nextcloud uses.  Succeeds even on "access
+    # denied", so no credentials are needed; fails while the server is not
+    # yet listening (including the socket-only temp server during init).
+    healthcheck:
+      test: ["CMD", "mariadb-admin", "ping", "-h", "127.0.0.1", "--silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
 
   # Do we need this?
   myadmin:
@@ -29,9 +40,12 @@ services:
   nextcloud:
     image: nextcloud:stable
     depends_on:
-      - mariadb
-      - redis
-      - collabora
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      collabora:
+        condition: service_started
     container_name: nextcloud-nextcloud
     restart: always
     volumes:
