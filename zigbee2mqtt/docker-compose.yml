@@ -1,14 +1,9 @@
-version:
-  "3"
 services:
     zigbee2mqtt:
         container_name: zigbee2mqtt
+        # Upgrade: docker compose pull && docker compose up -d  (restart keeps the old image)
         image: ghcr.io/koenkk/zigbee2mqtt
         restart: unless-stopped
-        logging:
-            driver: "json-file"
-            options:
-                max-size: "256m"
         volumes:
             - /var/zigbee2mqtt/data:/app/data
             - /run/udev:/run/udev:ro
