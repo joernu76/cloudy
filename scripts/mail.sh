@@ -1,6 +1,6 @@
 #!/bin/bash
 source /home/pi/cloudy/scripts/.env.mail
-echo "Subject: cloudy" > tst.txt
+echo "Subject: $(hostname)" > tst.txt
 printf "%s\n" "$*" >> tst.txt
 echo >> tst.txt
 unix2dos tst.txt
