@@ -3,30 +3,6 @@
 ## Documentation
 https://hub.docker.com/r/solarexplorer/sbfspot-sqlite
 
-## Commands used to create the dockers
-
-* sudo docker create -t  -v /etc/localtime:/etc/localtime:ro  -v /var/sbfspot/data:/var/smadata  -v /var/sbfspot/config/SBFspot.cfg:/opt/sbfspot/SBFspot.cfg  --device=/dev/tty  --net=host  --name sbfspot-daydata  solarexplorer/sbfspot-sqlite /opt/sbfspot/SBFspot -v -ad1 -am0 -ae1
-* sudo docker create -t  -v /etc/localtime:/etc/localtime:ro  -v /var/sbfspot/data:/var/smadata  -v /var/sbfspot/config/SBFspot.cfg:/opt/sbfspot/SBFspot.cfg  --device=/dev/tty  --net=host  --name sbfspot-monthdata  solarexplorer/sbfspot-sqlite /opt/sbfspot/SBFspot -v -sp0 -ad0 -am1 -ae1 -finq
-
-## fetch data
-
-*/5 6-22 * * * docker start -a sbfspot-daydata
-55 05 * * * docker start -a sbfspot-monthdata
-
-## upload
-
-docker run -dt --restart=unless-stopped \
- -v /etc/localtime:/etc/localtime:ro \
- -v /var/sbfspot/data:/var/smadata \
- -v /var/sbfspot/config/SBFspotUpload.cfg:/opt/sbfspot/SBFspotUpload.cfg \
- --name sbfspot-uploader \
- solarexplorer/sbfspot-sqlite /opt/sbfspot/SBFspotUploadDaemon
-
-# SBFSpot
-
-## Documentation
-https://hub.docker.com/r/solarexplorer/sbfspot-sqlite
-
 ## Build custom image with MQTT support
 
 The base image is based on Debian Stretch (EOL) and does not include `mosquitto-clients`,
@@ -46,7 +22,7 @@ sudo docker create -t \
   --device=/dev/tty \
   --net=host \
   --name sbfspot-daydata \
-  sbfspot-mqtt /opt/sbfspot/SBFspot -v -ad1 -am0 -ae1 -mqtt
+  sbfspot-mqtt /opt/sbfspot/SBFspot -ad1 -am0 -ae1 -mqtt
 
 sudo docker create -t \
   -v /etc/localtime:/etc/localtime:ro \
@@ -55,11 +31,14 @@ sudo docker create -t \
   --device=/dev/tty \
   --net=host \
   --name sbfspot-monthdata \
-  sbfspot-mqtt /opt/sbfspot/SBFspot -v -sp0 -ad0 -am1 -ae1 -finq
+  sbfspot-mqtt /opt/sbfspot/SBFspot -sp0 -ad0 -am1 -ae1 -finq
 ```
 
 Note: `-mqtt` is only added to `sbfspot-daydata` since that is the container
 providing the 5-minute spot data. Month data collection does not need it.
+
+No `-v`: the default verbosity (2) keeps errors and a summary; `-v` dumped
+all spot data into the container log every 5 minutes.
 
 ## Fetch data (crontab)
 */5 6-22 * * * docker start -a sbfspot-daydata
@@ -73,7 +52,7 @@ docker run -dt --restart=unless-stopped \
   -v /var/sbfspot/data:/var/smadata \
   -v /var/sbfspot/config/SBFspotUpload.cfg:/opt/sbfspot/SBFspotUpload.cfg \
   --name sbfspot-uploader \
-  sbfspot-mqtt /opt/sbfspot/SBFspotUploadDaemon
+  solarexplorer/sbfspot-sqlite /opt/sbfspot/SBFspotUploadDaemon
 ```
 
 ## SBFspot.cfg MQTT settings

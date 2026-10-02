@@ -1,5 +1,3 @@
-version: '2'
-
 services:    
   comfoair:
     image: adorobis/hacomfoairmqtt:latest

@@ -10,7 +10,6 @@ services:
     environment:
       - MARIADB_ROOT_PASSWORD=${STANDARD_PASSWORD}
       - MARIADB_DATABASE=nextcloud
-      - MARIADB_USER=root
       # Run mariadb-upgrade (after backing up system tables) on version change.
       - MARIADB_AUTO_UPGRADE=1
     # Ping over TCP, which is what nextcloud uses.  Succeeds even on "access
@@ -22,20 +21,6 @@ services:
       timeout: 5s
       retries: 30
       start_period: 30s
-
-  # Do we need this?
-  myadmin:
-    image: phpmyadmin:5
-    depends_on:
-      - mariadb
-    container_name: nextcloud-phpmyadmin
-    restart: always
-    ports:
-      - 127.0.0.1:9021:80
-    environment:
-      - MYSQL_USER=root
-      - MYSQL_PASSWORD=${STANDARD_PASSWORD}
-      - PMA_HOST=mariadb
 
   nextcloud:
     image: nextcloud:stable
@@ -62,7 +47,9 @@ services:
       - REDIS_PORT=6379
       - PHP_MEMORY_LIMIT=1G
       - PHP_UPLOAD_LIMIT=1G
-      - TRUSTED_PROXIES=nginx
+      # Must be IP/CIDR (hostnames are not resolved). Docker's default pools,
+      # because "compose down/up" may move the network to another subnet.
+      - TRUSTED_PROXIES=172.16.0.0/12
 
   # HTTPS is handled by nginx
   collabora:
@@ -78,9 +65,11 @@ services:
       - SYS_CHROOT
       - SYS_ADMIN
     environment:
-      - password=${STANDARD_PASSWORD}
+      - password=${COLLABORA_ADMIN_PASSWORD}
       - username=nextcloud
       - server_name=${NEXTCLOUD_URL}:1123
+      # Only this Nextcloud may use Collabora (default: first host after start)
+      - aliasgroup1=https://${NEXTCLOUD_URL}:1124
       - DONT_GEN_SSL_CERT=1
       - "extra_params=--o:ssl.enable=false --o:ssl.termination=true"
 
@@ -89,7 +78,6 @@ services:
     container_name: nextcloud-redis
     restart: always
     volumes:
-      - /var/nextcloud/redis:/usr/local/etc/redis
       - /var/nextcloud/redis-data:/data
 
   # reverse proxy for nextcloud and collabora server
@@ -108,17 +96,3 @@ services:
       - /var/nextcloud/nginx:/var/log/nginx            # added to logrotate.d
     depends_on:
       - nextcloud
-
-
-  # parse nginx logs to ban ips with many failed accesses
-  fail2ban:
-    image: crazymax/fail2ban:latest
-    container_name: nextcloud-fail2ban
-    restart: always
-    network_mode: host                                  # needs host iptables access
-    cap_add:
-      - NET_ADMIN
-      - NET_RAW
-    volumes:
-      - /var/nextcloud/fail2ban:/data                   # jail configs go here
-      - /var/nextcloud/nginx:/var/log/nginx:ro          # read nginx logs

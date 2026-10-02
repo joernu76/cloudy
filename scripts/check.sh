@@ -25,7 +25,6 @@ for c in \
     homeassistant \
     influxdb-influxdb \
     nextcloud-collabora \
-    nextcloud-fail2ban \
     nextcloud-mariadb \
     nextcloud-nextcloud \
     nextcloud-nginx \

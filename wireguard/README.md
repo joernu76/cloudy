@@ -1,6 +1,6 @@
 # WireGuard VPN on cloudy
 
-WireGuard VPN running as a Docker container on cloudy (192.168.178.71).
+WireGuard VPN running as a Docker container on cloudy (192.168.178.98).
 Clients tunnel all traffic through the home network when away.
 
 ## Prerequisites
@@ -10,6 +10,13 @@ Verify with:
 
 ```bash
 sudo modprobe wireguard && echo "ok"
+```
+
+The container has no `SYS_MODULE` capability (it must not load kernel
+modules itself), so the host loads the module at boot:
+
+```bash
+echo wireguard | sudo tee /etc/modules-load.d/wireguard.conf
 ```
 
 Create the persistent data directory:
@@ -39,7 +46,7 @@ Forward UDP port 51820 to cloudy:
    - **Protokoll**: UDP
    - **Port an Gerät**: 51820
    - **Port extern gewünscht**: 51820
-   - **An Computer**: cloudy (or select 192.168.178.71)
+   - **An Computer**: cloudy (or select 192.168.178.98)
 5. Click **OK**, then **Übernehmen** (Apply)
 
 > **Note:** The FritzBox 7360 does not support WireGuard natively (that
@@ -122,7 +129,7 @@ nmcli connection down wg-home    # disconnect
 
 From the phone (with VPN active), visit https://whatismyipaddress.com —
 it should show your home IP. You can also reach local devices
-(e.g. http://192.168.178.71:8123 for Home Assistant).
+(e.g. http://192.168.178.98:8123 for Home Assistant).
 
 On the server, check connected peers:
 
@@ -132,10 +139,10 @@ docker exec wireguard wg show
 
 ## DNS
 
-`PEERDNS` is set to `172.17.0.1` (Docker host bridge) so VPN clients use Pi-hole
-for DNS resolution, getting ad-blocking while on VPN. Change to
-`192.168.178.1` to use the FritzBox DNS instead, or `1.1.1.1` for
-Cloudflare.
+`PEERDNS` is set to `192.168.178.1, fritz.box`: VPN clients use the FritzBox
+for DNS (no Pi-hole ad-blocking on VPN) and get `fritz.box` as search domain,
+so local hostnames resolve. Changing it requires regenerating all peer configs
+(see Setup Notes).
 
 ## Troubleshooting
 
@@ -143,13 +150,12 @@ Cloudflare.
 |---|---|
 | Can't connect from outside | Is UDP 51820 forwarded in FritzBox? `sudo nmap -sU -p 51820 <your-dyndns>` from outside |
 | Handshake but no traffic | Check `net.ipv4.ip_forward=1` on the host: `sysctl net.ipv4.ip_forward` |
-| DNS not resolving | Try changing `PEERDNS` to `1.1.1.1` to rule out Pi-hole issues |
+| DNS not resolving | Check the FritzBox answers: `dig @192.168.178.1 example.com` on cloudy |
 | Container won't start | Check `sudo modprobe wireguard` succeeds on the host |
 
 ## Setup Notes
 
 - **Peer names must be alphanumeric only.** The linuxserver image silently skips names with hyphens or special characters (e.g. `android-joern` fails, `androidjoern` works).
-- **PEERDNS must use the Docker bridge IP (`172.17.0.1`), not the host's WiFi IP (`192.168.178.71`).** Containers on the default bridge network cannot reach the host via its WiFi/LAN address. Pi-hole listens on all interfaces including docker0, so `172.17.0.1` works.
 - **Cannot test from the home WiFi.** The FritzBox 7360 does not support hairpin NAT, so VPN connections from inside the LAN back to the public IP will fail. Test over mobile data instead.
 - **Avoid "Always-on VPN" + "Block connections without VPN" on Android** unless you only use the phone on mobile data. On networks where the tunnel can't connect (including the home WiFi), all internet access is blocked.
 - **The official WireGuard app is not on F-Droid.** On GrapheneOS, install it via Aurora Store.

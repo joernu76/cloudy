@@ -1,5 +1,3 @@
-version:
-  "3"
 services:
   influxdb2:
     container_name: influxdb-influxdb
