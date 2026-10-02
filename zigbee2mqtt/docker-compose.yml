@@ -17,6 +17,7 @@ services:
             - 8080:8080
         environment:
             - TZ=Europe/Berlin
+            - DISABLE_TUYA_DEFAULT_RESPONSE=true
         devices:
             # Make sure this matched your adapter location
             - /dev/serial/by-id/usb-ITead_Sonoff_Zigbee_3.0_USB_Dongle_Plus_464ae06e3e8eed11a1058554b96ce6f8-if00-port0:/dev/ttyUSB0
