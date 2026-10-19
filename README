@@ -26,6 +26,8 @@ TODO
 15  2    * * 1 /bin/bash /home/pi/cloudy/scripts/backup.sh                            >> /home/pi/cloudy/logs/backup.log   2>&1
 15  2    * * 2 /bin/bash /home/pi/cloudy/certbot/certbot.sh                           >> /home/pi/cloudy/logs/certbot.log  2>&1
 15  2    * * 3 /bin/bash /home/pi/cloudy/scripts/updater.sh                           >> /home/pi/cloudy/logs/updater.log  2>&1
+# after backup/updater: backup stops containers for the whole rsync (>1h if much new data)
+15  6    * * * /bin/bash /home/pi/cloudy/scripts/check.sh                             >> /home/pi/cloudy/logs/check.log    2>&1
 
 */5 *    * * * docker exec -u www-data nextcloud-nextcloud php /var/www/html/cron.php >> /home/pi/cloudy/logs/cron.php.log 2>&1
 
